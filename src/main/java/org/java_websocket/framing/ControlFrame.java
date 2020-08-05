@@ -45,7 +45,7 @@ public abstract class ControlFrame extends FramedataImpl1 {
 	@Override
 	public void isValid() throws InvalidDataException {
 		if( !isFin() ) {
-			throw new InvalidFrameException( "Control frame can't have fin==false set" );
+			//throw new InvalidFrameException( "Control frame can't have fin==false set" );
 		}
 		if( isRSV1() ) {
 			throw new InvalidFrameException( "Control frame can't have rsv1==true set" );
