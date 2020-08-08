@@ -446,7 +446,12 @@ public abstract class WebSocketClient extends AbstractWebSocket implements Runna
 		try {
 			boolean isNewSocket = false;
 			if (socketFactory != null) {
-				socket = socketFactory.createSocket();
+				if(proxy != null) {
+					socket = new Socket( proxy );
+					isNewSocket = true;
+				}else {
+					socket = socketFactory.createSocket();
+				}
 			} else if( socket == null ) {
 				socket = new Socket( proxy );
 				isNewSocket = true;
@@ -464,16 +469,26 @@ public abstract class WebSocketClient extends AbstractWebSocket implements Runna
 
 			// if the socket is set by others we don't apply any TLS wrapper
 			if (isNewSocket && "wss".equals( uri.getScheme())) {
-				SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
-				sslContext.init(null, null, null);
-				SSLSocketFactory factory = sslContext.getSocketFactory();
-				socket = factory.createSocket(socket, uri.getHost(), getPort(), true);
+				if(socketFactory != null && socketFactory instanceof SSLSocketFactory) {
+					socket = ((SSLSocketFactory)socketFactory).createSocket(socket, uri.getHost(), getPort(), true);
+				}else {
+					SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
+					sslContext.init(null, null, null);
+					SSLSocketFactory factory = sslContext.getSocketFactory();
+					socket = factory.createSocket(socket, uri.getHost(), getPort(), true);
+				}
 			}
 
 			if (socket instanceof SSLSocket) {
 				SSLSocket sslSocket = (SSLSocket)socket;
 				SSLParameters sslParameters = sslSocket.getSSLParameters();
-				onSetSSLParameters(sslParameters);
+				/**
+				 *  onSetSSLParameters(sslParameters) here equals sslParameters.setEndpointIdentificationAlgorithm("HTTPS");(if not overrided)
+				 *  the hostname validation will override the factory settings, so i add an 'if'
+				 */
+				if(socketFactory == null) {
+					onSetSSLParameters(sslParameters); 
+				}
 				sslSocket.setSSLParameters(sslParameters);
 			}
 
